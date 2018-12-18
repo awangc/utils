@@ -1,0 +1,26 @@
+# Docker-specific williamofockham/utils
+# =====================================
+# Expectation for docker commands is to work with hub.docker.com; so
+# YOU MUST BE Docker LOGGED-IN.
+
+NAMESPACE = williamofockham
+
+DPDK_BASE_DIR ?= $(shell pwd)/dpdk
+DPDK_DOCKERFILE = $(DPDK_BASE_DIR)/Dockerfile.slim
+DPDK_VERSION = 17.08.1
+
+.PHONY: build build-dpdk build-dpdk-dev build-dpdk-devbind
+
+build-dpdk:
+	@docker build -f $(DPDK_DOCKERFILE) --target dpdk \
+	-t $(NAMESPACE)/dpdk:$(DPDK_VERSION) $(DPDK_BASE_DIR)
+
+build-dpdk-dev:
+	@docker build -f $(DPDK_DOCKERFILE) --target dpdk-dev \
+	-t $(NAMESPACE)/dpdk:$(DPDK_VERSION)-dev $(DPDK_BASE_DIR)
+
+build-dpdk-devbind:
+	@docker build -f $(DPDK_DOCKERFILE) --target dpdk-devbind \
+	-t $(NAMESPACE)/dpdk-devbind:$(DPDK_VERSION) $(DPDK_BASE_DIR)
+
+build: build-dpdk build-dpdk-dev build-dpdk-devbind

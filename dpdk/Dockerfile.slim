@@ -1,0 +1,76 @@
+FROM bitnami/minideb:stretch as builder
+
+ENV DPDK_VERSION 17.08.1
+ENV RTE_SDK /opt/dpdk/dpdk-stable-${DPDK_VERSION}
+ENV CFLAGS "-g3 -Wno-error=maybe-uninitialized -fPIC"
+
+RUN install_packages \
+  build-essential \
+  libnuma-dev \
+  libpcap-dev \
+  wget
+
+RUN mkdir -p /opt/dpdk && \
+  cd /opt/dpdk && \
+  wget --no-check-certificate https://fast.dpdk.org/rel/dpdk-${DPDK_VERSION}.tar.xz && \
+  tar xf dpdk-${DPDK_VERSION}.tar.xz && \
+  rm dpdk-${DPDK_VERSION}.tar.xz
+
+COPY common_linuxapp-17.08.container $RTE_SDK/config/common_linuxapp
+COPY defconfig_x86_64-nhm-linuxapp-gcc $RTE_SDK/config/defconfig_x86_64-nhm-linuxapp-gcc
+
+RUN cd ${RTE_SDK} && \
+  make config T=x86_64-nhm-linuxapp-gcc EXTRA_CFLAGS="$CFLAGS" && \
+  make -j$(nproc) EXTRA_CFLAGS="$CFLAGS" && \
+  make install
+
+
+##
+# development DPDK
+##
+FROM bitnami/minideb:stretch as dpdk-dev
+
+LABEL maintainer="williamofockham <occam_engineering@comcast.com>"
+
+RUN install_packages \
+  libnuma-dev \
+  libpcap-dev \
+  python
+
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/include /usr/local/include
+COPY --from=builder /usr/local/lib /usr/local/lib
+COPY --from=builder /usr/local/sbin /usr/local/sbin
+COPY --from=builder /usr/local/share/dpdk /usr/local/share/dpdk
+
+RUN mkdir -p /opt/dpdk/build && \
+  ln -s /usr/local/lib /opt/dpdk/build/lib && \
+  ln -s /usr/local/include/dpdk /opt/dpdk/build/include
+
+
+##
+# slim DPDK
+##
+FROM bitnami/minideb:stretch as dpdk
+
+LABEL maintainer="williamofockham <occam_engineering@comcast.com>"
+
+RUN install_packages \
+  libnuma1 \
+  libpcap0.8
+
+COPY --from=builder /usr/local/lib /usr/local/lib
+
+
+##
+# dpdk-devbind
+##
+FROM bitnami/minideb:stretch as dpdk-devbind
+
+RUN install_packages \
+  iproute2 \
+  pciutils \
+  python
+
+COPY --from=builder /usr/local/share/dpdk/usertools/dpdk-devbind.py /usr/local/share/dpdk/usertools/dpdk-devbind.py
+COPY --from=builder /usr/local/sbin/dpdk-devbind /usr/local/sbin/dpdk-devbind
