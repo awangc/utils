@@ -5,11 +5,14 @@
 
 NAMESPACE = williamofockham
 
-DPDK_BASE_DIR ?= $(shell pwd)/dpdk
+DPDK_BASE_DIR = $(shell pwd)/dpdk
 DPDK_DOCKERFILE = $(DPDK_BASE_DIR)/Dockerfile.slim
 DPDK_VERSION = 17.08.1
 
-.PHONY: build build-dpdk build-dpdk-dev build-dpdk-devbind
+SANDBOX_DOCKERFILE = Dockerfile.slim
+RUST_VERSION = nightly-2018-12-01
+
+.PHONY: build build-dpdk build-dpdk-dev build-dpdk-devbind build-sandbox
 
 build-dpdk:
 	@docker build -f $(DPDK_DOCKERFILE) --target dpdk \
@@ -23,4 +26,8 @@ build-dpdk-devbind:
 	@docker build -f $(DPDK_DOCKERFILE) --target dpdk-devbind \
 	-t $(NAMESPACE)/dpdk-devbind:$(DPDK_VERSION) $(DPDK_BASE_DIR)
 
-build: build-dpdk build-dpdk-dev build-dpdk-devbind
+build-sandbox:
+	@docker build -f $(SANDBOX_DOCKERFILE) -t $(NAMESPACE)/sandbox:$(RUST_VERSION) \
+	$(shell pwd)
+
+build: build-dpdk build-dpdk-dev build-dpdk-devbind build-sandbox
