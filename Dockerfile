@@ -79,15 +79,15 @@ RUN install_packages \
     clippy-preview \
     rustfmt-preview \
     rust-src && \
-  cargo install \
-    cargo-watch \
-    cargo-expand \
-    hyperfine \
-    ripgrep \
-    sccache && \
+  # invoke cargo install independently otherwise partial failure has the incorrect exit code
+  cargo install cargo-watch && \
+  cargo install cargo-expand && \
+  cargo install hyperfine && \
+  cargo install ripgrep && \
+  # cargo install sccache && \
   rm -rf /root/.cargo/registry
 
-ENV RUSTC_WRAPPER=sccache
+# ENV RUSTC_WRAPPER=sccache
 
 COPY entrypoint.sh /
 
