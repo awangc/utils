@@ -9,17 +9,15 @@ VAGRANTFILE_API_VERSION = "2"
   end
 end
 
-$scripts_path = File.dirname(File.realdirpath(__FILE__))
+$base_dir = File.dirname(__FILE__)
+# the directory where the provisioning scripts are located
+$scripts_dir = File.dirname(File.realdirpath(__FILE__))
+# the utils submodule directory relative to the base
+$submod_dir = Pathname.new($scripts_dir).relative_path_from(Pathname.new($base_dir))
 
-$dproject = "williamofockham"
-$dimage = "dpdk-devbind"
-$dtag = "17.08.1"
-
-$dimage = ENV.fetch("DIMAGE", "netbricks")
-$dtag = ENV.fetch("DTAG", "latest")
-$dproject = ENV.fetch("DPROJECT", "williamofockham")
-$dpdk_driver = ENV.fetch("DPDK_DRIVER", "uio_pci_generic")
-$dpdk_devices = ENV.fetch("DPDK_DEVICES", "0000:00:08.0 0000:00:09.0")
+$devbind_img = "williamofockham/dpdk-devbind:17.08.1"
+$dpdk_driver = "uio_pci_generic"
+$dpdk_devices = "0000:00:08.0 0000:00:09.0 0000:00:0a.0 0000:00:10.0"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # All Vagrant configuration is done here. The most common configuration
@@ -36,21 +34,29 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", inline: "echo 'cd /vagrant' >> /home/vagrant/.bashrc", run: "always"
 
   # specific IP. This option is needed because DPDK takes over the NIC.
-  config.vm.network "private_network", ip: "10.1.2.2", mac: "BADCAFEBEEF1", nic_type: "virtio"
-  config.vm.network "private_network", ip: "10.1.2.3", mac: "BADCAFEBEEF2", nic_type: "virtio"
-  config.vm.network "private_network", ip: "fe80::b8dc:afff:feeb:eef3", mac: "BADCAFEBEEF3"
-  config.vm.network "private_network", ip: "fe80::b8dc:afff:feeb:eef4", mac: "BADCAFEBEEF4"
+  # 0000:00:08.0 used for netbricks
+  config.vm.network "private_network", ip: "10.1.2.1", mac: "BADCAFEBEEF1", nic_type: "virtio"
+  # 0000:00:09.0 used for moongen
+  config.vm.network "private_network", ip: "10.1.2.2", mac: "BADCAFEBEEF2", nic_type: "virtio"
+  # 0000:00:0a.0 used for containernet
+  config.vm.network "private_network", ip: "10.1.2.3", mac: "BADCAFEBEEF3", nic_type: "virtio"
+  # 0000:00:10.0 used for containernet
+  config.vm.network "private_network", ip: "10.1.2.4", mac: "BADCAFEBEEF4", nic_type: "virtio"
+  # used for ebpf testing
+  config.vm.network "private_network", ip: "fe80::b8dc:afff:feeb:eef5", mac: "BADCAFEBEEF5"
+  config.vm.network "private_network", ip: "fe80::b8dc:afff:feeb:eef6", mac: "BADCAFEBEEF6"
 
   # Setup the VM for DPDK, including binding the extra interface via the fetched
   # container
-  config.vm.provision "shell", path: "#{$scripts_path}/vm-kernel-upgrade.sh"
+  config.vm.provision "shell", path: "#{$scripts_dir}/vm-kernel-upgrade.sh"
   config.vm.provision "reload"
-  config.vm.provision "shell", path: "#{$scripts_path}/vm-setup.sh"
+  config.vm.provision "shell", path: "#{$scripts_dir}/vm-setup.sh"
+  config.vm.provision "shell", path: "#{$scripts_dir}/containernet-setup.sh", args: ["#{$submod_dir}"]
 
   # Pull and run (then remove) our image in order to do the devbind
   config.vm.provision "docker" do |d|
-    d.pull_images "williamofockham/dpdk-devbind:17.08.1"
-    d.run "williamofockham/dpdk-devbind:17.08.1",
+    d.pull_images "#{$devbind_img}"
+    d.run "#{$devbind_img}",
           auto_assign_name: false,
           args: %W(--rm
                    --privileged
@@ -79,5 +85,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # Allow promiscuous mode for host-only adapter
     vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nicpromisc4", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nicpromisc5", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nicpromisc6", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nicpromisc7", "allow-all"]
   end
 end
