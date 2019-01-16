@@ -65,7 +65,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                    -v /dev/hugepages:/dev/hugepages).join(" "),
           restart: "no",
           daemonize: true,
-          cmd: "/bin/bash -c '/dpdk/usertools/dpdk-devbind.py --force -b #{$dpdk_driver} #{$dpdk_devices}'"
+          cmd: "/bin/bash -c 'dpdk-devbind --force -b #{$dpdk_driver} #{$dpdk_devices}'"
   end
 
   # VirtualBox-specific configuration
