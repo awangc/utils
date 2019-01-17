@@ -5,9 +5,11 @@
 
 NAMESPACE = williamofockham
 
+BASE_DIR = $(shell pwd)
+
 DPDK_IMG = dpdk
 DPDK_DEVBIND_IMG = dpdk-devbind
-DPDK_BASE_DIR = $(shell pwd)/dpdk
+DPDK_BASE_DIR = $(BASE_DIR)/dpdk
 DPDK_DOCKERFILE = $(DPDK_BASE_DIR)/Dockerfile
 DPDK_VERSION = 17.08.1
 
@@ -62,3 +64,13 @@ rmi:
 	@docker rmi $(NAMESPACE)/$(DPDK_IMG):$(DPDK_VERSION) \
 	$(NAMESPACE)/$(DPDK_DEVBIND_IMG):$(DPDK_VERSION) \
 	$(NAMESPACE)/$(SANDBOX_IMG):$(RUST_VERSION)
+
+run:
+	@docker run -it --rm --privileged --network=host \
+		-w /opt \
+		-v /lib/modules:/lib/modules \
+		-v /usr/src:/usr/src \
+		-v /dev/hugepages:/dev/hugepages \
+		-v $(BASE_DIR)/NetBricks:/opt/netbricks \
+		-v $(BASE_DIR)/MoonGen:/opt/moongen \
+		$(SANDBOX) /bin/bash
