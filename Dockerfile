@@ -54,6 +54,9 @@ RUN install_packages \
     gdbserver \
     git \
     libclang-dev \
+    libcurl4-gnutls-dev \
+    libgnutls30 \
+    libgnutls-openssl-dev \
     libsctp-dev \
     libssl-dev \
     pkg-config \
