@@ -88,10 +88,10 @@ RUN install_packages \
   cargo install cargo-expand && \
   cargo install hyperfine && \
   cargo install ripgrep && \
-  # cargo install sccache && \
+  cargo install sccache && \
   rm -rf /root/.cargo/registry
 
-# ENV RUSTC_WRAPPER=sccache
+ENV RUSTC_WRAPPER=sccache
 
 COPY entrypoint.sh /
 
